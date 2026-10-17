@@ -1,0 +1,9 @@
+Billund & Copenhagen — v26 (14/10/2026)
+
+Pubblicare TUTTI i file dello ZIP nella root del repository GitHub Pages, sovrascrivendo i precedenti.
+
+NOVITÀ: sabato 24 pranzo al sacco e 4 supermercati Grindsted con link mappe; arrivo hotel, Rådhuspladsen, Strøget, Rundetårn e Tivoli senza rientro in hotel. Ingressi Tivoli già acquistati, giostre escluse. Domenica 25 percorso aggiornato secondo ultime decisioni; colazioni alternative e JUNO merenda facoltativa.
+
+Orari indicativi, verificare apertura supermercati, condizioni biglietti e programma Tivoli. Prezzo Tivoli non comunicato e non sommato al budget.
+
+Cache PWA aggiornata a v26.

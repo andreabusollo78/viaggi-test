@@ -1,0 +1,12 @@
+Billund & Copenhagen — v29
+
+Aggiornamenti rispetto a v28:
+- Nuova cartina generale illustrata con tutte le 11 attrazioni di Copenaghen nella pagina Mappa attrazioni Copenaghen.
+- Nuova cartina illustrata di sette locali per colazioni e merenda nella pagina Colazioni a Copenaghen.
+- Entrambe le cartine integrate anche nella guida stampabile v40.
+- Mappa interattiva e pulsanti Naviga invariati.
+- Cache offline aggiornata con le due nuove immagini.
+
+Pubblicazione: estrarre TUTTI i file nella radice del repository GitHub Pages, sostituendo i precedenti. Non caricare soltanto le immagini.
+
+Le distanze/tempi delle cartine sono indicativi; le immagini sono infografiche, non mappe pedonali georeferenziate.

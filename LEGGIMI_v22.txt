@@ -1,0 +1,12 @@
+VERSIONE 22 — 12/10/2026
+Guida aggiornata alla v35; Tivoli sabato 24 confermato; domenica alleggerita; audioguida.html con testi originali e sintesi vocale italiana del browser; cache service worker per HTML e immagini locali.
+
+Per salvare la guida in PDF: aprire guida.html, premere “Salva la guida in PDF”, scegliere “Salva come PDF” nella finestra di stampa. La webapp non genera un PDF in autonomia: usa la funzione di stampa del browser.
+
+OFFLINE: visitare prima online le pagine; HTML/testi/immagine sono in cache su HTTPS. Le mappe online, il meteo, i link esterni e la voce audio non sono garantiti offline.
+
+ATTENZIONE: copenhagen_walk.html e copenhagen_a_piedi.webp mantengono il vecchio percorso e mostrano avviso; usare la mappa dinamica del giorno 4.
+
+Per pubblicare su GitHub Pages: estrarre il contenuto dello ZIP direttamente nella radice del repository, non in una sottocartella.
+
+AGGIORNAMENTO 22.1: sabato 24 ottobre ingresso Tivoli ore 17:00–17:15, parata ore 18:00, cena 19:00–20:30, luci sul lago 21:30 e rientro a seguire. Guida aggiornata a v35.

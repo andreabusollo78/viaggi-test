@@ -1,0 +1,4 @@
+Billund & Copenhagen v31 — 15 ottobre 2026
+Novità: rimosso Mazzoli’s, confermata cena Grøften (24/10 ore 19, 6 persone); guida v42; titoli leggibili in tema scuro; audioguida con testi suddivisi per migliore compatibilità TTS, stato e selezione voci; percorsi stradali supermercati da På landet.
+NOTA: la sintesi vocale dipende dalle voci disponibili nel dispositivo; non è possibile garantire audio su ogni browser senza file audio preregistrati. Le distanze stradali vengono visualizzate tramite Google Maps, non riportate come valori inventati.
+Caricare tutti i file nella radice del repository GitHub Pages.

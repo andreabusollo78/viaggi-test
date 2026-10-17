@@ -1,0 +1,11 @@
+Billund & Copenhagen – v25
+
+Novità:
+- Cambio valuta con Frankfurter (api.frankfurter.dev) e ExchangeRate-API come riserva.
+- Errori di connessione descritti correttamente, cache dell’ultimo cambio.
+- Modalità chiara predefinita per chi non ha già scelto un tema.
+- In modalità scura, schede e bolle restano chiare con testi neri/grigi.
+- Service worker aggiornato con strategia network-first per HTML, CSS e JS.
+
+Pubblicazione: caricare i file direttamente nella root di GitHub Pages.
+Chi aveva già scelto la modalità scura può tornare alla chiara con il pulsante tema; la preferenza resta memorizzata.

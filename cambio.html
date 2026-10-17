@@ -1,0 +1,33 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cambio EUR / DKK · v25</title><link rel="stylesheet" href="theme.css"><script defer src="theme.js"></script><style>:root{--bg:#f4f7fb;--ink:#172033;--card:#fff;--muted:#596b82;--line:#dce3ed}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,Arial}header{background:#15243c;color:white;padding:16px}header a{color:white}main{max-width:650px;margin:auto;padding:18px}.card{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:20px;margin:12px 0}h1{font-size:26px;margin:0 0 8px}label{display:block;font-weight:750;margin:12px 0 5px}input,select{width:100%;font:inherit;padding:12px;border:1px solid #9daec4;border-radius:10px;background:var(--card);color:var(--ink)}.result{font-size:29px;font-weight:800;margin:18px 0 6px;overflow-wrap:anywhere}.muted{color:var(--muted);font-size:14px}button{font:inherit;padding:9px 13px;border-radius:10px;border:1px solid #9daec4;background:var(--card);color:var(--ink);cursor:pointer}.chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.chips button{font-weight:700}.status{padding:11px;border-radius:9px;background:#e5eefb;color:#172033}</style><meta name="color-scheme" content="light"><style>html{color-scheme:light!important}html,body{background-color:#f4f7fb}</style><style>/* v40 */a.navbtn,a.btn,a.action,.actions a,.actions a.secondary,a.video,button.primary,button.printbtn,.chips button,#refresh{background:#374151!important;color:#fff!important;border-color:#374151!important}</style></head><body><header><a href="./">← Home</a> · 💶 Cambio valuta</header><main><h1>Euro ↔ Corone danesi</h1><p class="muted">Convertitore del viaggio · EUR e DKK</p><div class="card"><label for="amount">Importo</label><input id="amount" type="number" min="0" step="any" value="100" inputmode="decimal"><label for="direction">Conversione</label><select id="direction"><option value="DKK-EUR">Corone danesi (DKK) → Euro (EUR)</option><option value="EUR-DKK">Euro (EUR) → Corone danesi (DKK)</option></select><div class="chips"><button data-amount="50">50</button><button data-amount="100">100</button><button data-amount="200">200</button><button data-amount="500">500</button></div><div id="result" class="result" aria-live="polite">—</div><div id="rate" class="muted"></div><p id="status" class="status" role="status">Recupero il tasso aggiornato…</p><button id="refresh" type="button">↻ Aggiorna il tasso</button></div><p class="muted">Fonti: <a href="https://frankfurter.dev/" target="_blank" rel="noopener">Frankfurter</a> (riferimento BCE) e <a href="https://www.exchangerate-api.com/" target="_blank" rel="noopener">ExchangeRate-API</a> (riserva). Il cambio effettivo della carta o della banca può differire per commissioni e maggiorazioni. Non è un preventivo bancario.</p></main><script>
+const A=document.getElementById('amount'),D=document.getElementById('direction'),R=document.getElementById('result'),T=document.getElementById('rate'),S=document.getElementById('status');let current=null;const KEY='billund-eur-dkk-rate';function render(){const n=Number(A.value);if(!current||!Number.isFinite(n)||n<0){R.textContent='—';return}const forward=D.value==='EUR-DKK',out=forward?n*current.rate:n/current.rate;R.textContent=new Intl.NumberFormat('it-IT',{style:'currency',currency:forward?'DKK':'EUR'}).format(out);T.textContent='1 EUR = '+current.rate.toFixed(5)+' DKK · tasso del '+current.date}function useSaved(){try{const c=JSON.parse(localStorage.getItem(KEY));if(c&&Number.isFinite(c.rate)&&c.rate>0&&/^\d{4}-\d{2}-\d{2}$/.test(c.date)){current=c;S.textContent='Modalità offline: ultimo tasso salvato ('+c.date+').';render();return true}}catch(e){}return false}async function getRate(){
+ const sources=[
+  {name:'Frankfurter',url:'https://api.frankfurter.dev/v1/latest?base=EUR&symbols=DKK',read:d=>({rate:Number(d.rates?.DKK),date:d.date})},
+  {name:'ExchangeRate-API',url:'https://open.er-api.com/v6/latest/EUR',read:d=>({rate:Number(d.rates?.DKK),date:d.time_last_update_utc?new Date(d.time_last_update_utc).toISOString().slice(0,10):new Date().toISOString().slice(0,10)})}
+ ];
+ let errors=[];
+ for(const source of sources){
+  try{
+   const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),7000);
+   let response;try{response=await fetch(source.url,{cache:'no-store',signal:controller.signal})}finally{clearTimeout(timer)}
+   if(!response.ok)throw Error('HTTP '+response.status);
+   const data=await response.json();const value=source.read(data);
+   if(!Number.isFinite(value.rate)||value.rate<6||value.rate>9||!/^\d{4}-\d{2}-\d{2}$/.test(value.date))throw Error('Risposta non valida');
+   return {...value,source:source.name};
+  }catch(e){errors.push(source.name+': '+e.message)}
+ }
+ throw Error(errors.join('; '));
+}
+async function update(){
+ useSaved();S.textContent='Verifico il tasso aggiornato online…';
+ try{
+  const value=await getRate();current=value;
+  try{localStorage.setItem(KEY,JSON.stringify(current))}catch(e){}
+  S.textContent='Tasso aggiornato tramite '+value.source+' (data '+value.date+').';render();
+ }catch(e){
+  if(current){S.textContent='Servizi di cambio momentaneamente non raggiungibili: utilizzo l’ultimo tasso salvato del '+current.date+'.';render()}
+  else{S.textContent='Impossibile contattare i servizi di cambio. La connessione del telefono potrebbe essere attiva: riprova più tardi o controlla eventuali blocchi del browser.';T.textContent='';R.textContent='—'}
+  console.warn('Cambio valuta:',e.message);
+ }
+}
+A.addEventListener('input',render);D.addEventListener('change',render);document.querySelectorAll('[data-amount]').forEach(b=>b.addEventListener('click',()=>{A.value=b.dataset.amount;render()}));document.getElementById('refresh').addEventListener('click',update);update();if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script></body></html>

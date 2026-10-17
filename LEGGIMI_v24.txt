@@ -1,0 +1,5 @@
+Billund & Copenhagen · v24 (13/10/2026)
+
+Modifiche: pulsante stampa duplicato eliminato dalla guida; tema chiaro/scuro persistente su tutte le pagine; convertitore EUR/DKK con tasso BCE via Frankfurter e fallback offline.
+
+Installazione: caricare tutti i file nella root GitHub Pages, sovrascrivendo la v23. Aprire una volta online tutte le pagine per cache offline. La sintesi vocale offline dipende dal dispositivo. Le mappe Leaflet richiedono Internet per le tessere non gia in cache.

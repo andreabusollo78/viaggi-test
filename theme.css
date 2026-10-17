@@ -1,0 +1,9 @@
+:root{color-scheme:light}html,body{color-scheme:light}/* v27 global navigation, safe areas and contrast */
+body{padding-bottom:70px!important}.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:5000;background:#fff;border-top:1px solid #dce3ed;display:flex;justify-content:space-around;padding:7px 3px max(8px,env(safe-area-inset-bottom));box-shadow:0 -2px 14px #00000015}.bottom-nav a{color:#172033!important;text-decoration:none!important;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:21px;flex:1;line-height:1.1}.bottom-nav a span{font-size:10px;color:#596b82!important;font-weight:750}@media print{.bottom-nav{display:none!important}body{padding-bottom:0!important}}
+
+
+/* v32: consistently legible action buttons on white cards */
+a.navbtn,a.action,a[href].navbtn,button.primary,.actions a{color:#fff!important}a.navbtn:visited,a.action:visited{color:#fff!important}.bottom-nav a{color:#172033!important}.bottom-nav a span{color:#596b82!important}
+
+/* v40 unified actionable controls, excluding navigation, plain links and tiles */
+a.navbtn,a.btn,a.walkbtn,a.guidebtn,a.action,.actions a,.actions a.secondary,button.primary,button.printbtn,.chips button,#refresh{background:#374151!important;color:#fff!important;border-color:#374151!important}

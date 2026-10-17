@@ -1,0 +1,5 @@
+Billund & Copenhagen v25.1 — Correzioni visive
+- Home: etichetta v25.1
+- Tema scuro: cornice scura, schede bianche, testo scuro/grigio come in modalità chiara.
+- Cache offline aggiornata.
+Caricare tutti i file nella radice del repository GitHub Pages.

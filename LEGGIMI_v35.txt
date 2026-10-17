@@ -1,0 +1,4 @@
+Billund & Copenhagen v35 - guida v46
+Modalità esclusivamente chiara. Nessun comando audio, lettura vocale o selettore di tema. Sezioni di approfondimento testuale conservate.
+Aggiornato tour Linda e pomeriggio autonomo del 25 ottobre.
+Caricare tutti i file nella radice del repository GitHub Pages, sostituendo i precedenti. Eliminare eventuali vecchi file audioguida.html e audioguida_contenuti.json.

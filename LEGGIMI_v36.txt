@@ -1,0 +1,1 @@
+Webapp v36 - guida stampabile v47. Meteo Open-Meteo giornaliero visibile in home e nelle singole schede, temperature min/max e probabilità massima di precipitazioni. Richiede connessione internet; previsioni aggiornate all'apertura. Pubblicato 17/10/2026.

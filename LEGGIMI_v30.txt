@@ -1,0 +1,15 @@
+Billund & Copenhagen — v30 (14 ottobre 2026)
+
+AGGIORNAMENTI
+- Sabato 24/10, ore 19:00: ristorante Grøften (dentro Tivoli) PRENOTAZIONE CONFERMATA per 6 persone.
+- Mazzoli’s: richiesta inviata, risposta in attesa; non è il ristorante scelto per la cena.
+- Conservati i pulsanti Naviga di entrambi i locali e tutte le funzioni v29.
+- Audioguida: indicazione versione aggiornata a v30.
+- Home modalità scura: corretto il contrasto del titolo «Il nostro viaggio».
+- Guida stampabile aggiornata alla v41.
+- Cache offline aggiornata a v30.
+
+PUBBLICAZIONE
+Estrarre tutti i file dello ZIP nella radice del repository GitHub Pages viaggi, sovrascrivendo i precedenti. Dopo la pubblicazione chiudere e riaprire la webapp, oppure ricaricare la pagina, per aggiornare il Service Worker.
+
+NOTA: La conferma Grøften è stata comunicata dall'utente; non sono noti codice prenotazione, menù o pagamento anticipato.

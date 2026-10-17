@@ -1,0 +1,3 @@
+Billund & Copenhagen 2026 — v23
+Basata su v22.1. Aggiunti pulsanti Wikipedia, Ascolta (apre direttamente la scheda), Guida 9–12 per attrazioni del 24 ottobre; etichette di costo; nuove storie audio; guida v36; immagine mappa preservata.
+Pubblicare tutti i file nella root del repository GitHub Pages. Prima apertura online necessaria per cache offline. Mappe e Wikipedia richiedono Internet; la sintesi vocale offline dipende dalle voci installate.
