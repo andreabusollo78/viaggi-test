@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Billund & Copenhagen 2026 · Mobile v40</title>
+<title>Billund & Copenhagen 2026 · Mobile v40 TEST</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 :root{--bg:#f4f7fb;--ink:#152033;--muted:#667085;--blue:#1769e0;--nav:#0f172a;--card:#fff;--line:#e5e7eb}
@@ -33,7 +33,13 @@ body:not(.day).section-view .quickgrid{display:none!important}
 body:not(.day).section-view .home-fold.section-active{display:block!important}
 .section-return{display:none;margin:0 0 16px;text-decoration:none;font-weight:750;color:var(--blue);background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 15px}
 body.section-view .section-return{display:block}
-\n/* v40 controls and clean home */\n:root{--blue:#374151}.actions a,.actions button,.actions button.kidbtn,.walkbtn,.guidebtn,.count-open,.count-close,button.primary,.utility-list a{background:#374151!important;color:#fff!important;border-color:#374151!important}.home:not(.section-view) .home-fold{display:none}body:not(.section-view) .home-fold{display:none}body.day #countOpen,body.section-view #countOpen{display:none!important}body.day .home-head{display:none}\n/* v40 test: utility links use the high-contrast white v39 style only in this section */\n#strumenti .utility-list a{background:#fff!important;color:#174e9c!important;border-color:#e5e7eb!important}\n#strumenti .utility-list a:visited{color:#174e9c!important}\n</style><link rel="stylesheet" href="theme.css"><script defer src="theme.js"></script><meta name="color-scheme" content="light"><style>html{color-scheme:light!important}html,body{background-color:#f4f7fb}</style><style id="v40-utility-contrast">/* Exception: white utility service links, v39 visual style */
+
+/* v40 controls and clean home */
+:root{--blue:#374151}.actions a,.actions button,.actions button.kidbtn,.walkbtn,.guidebtn,.count-open,.count-close,button.primary,.utility-list a{background:#374151!important;color:#fff!important;border-color:#374151!important}.home:not(.section-view) .home-fold{display:none}body:not(.section-view) .home-fold{display:none}body.day #countOpen,body.section-view #countOpen{display:none!important}body.day .home-head{display:none}
+/* v40 test: utility links use the high-contrast white v39 style only in this section */
+#strumenti .utility-list a{background:#fff!important;color:#174e9c!important;border-color:#e5e7eb!important}
+#strumenti .utility-list a:visited{color:#174e9c!important}
+</style><link rel="stylesheet" href="theme.css"><script defer src="theme.js"></script><meta name="color-scheme" content="light"><style>html{color-scheme:light!important}html,body{background-color:#f4f7fb}</style><style id="v40-utility-contrast">/* Exception: white utility service links, v39 visual style */
 body.section-view #strumenti .utility-list a,body.section-view #strumenti .utility-list a:visited{background:#fff!important;color:#174e9c!important;border-color:#e5e7eb!important;border-top:1px solid #e5e7eb!important;box-shadow:none!important}
 body.section-view #strumenti .utility-list a span{color:#174e9c!important}
 body.section-view #strumenti .utility-list{background:#fff!important}
@@ -62,7 +68,7 @@ const tripDays=[
   {day:"Giorno 2",date:"23/10/2026",title:"LEGOLAND Billund",description:"Giornata completa dedicata a LEGOLAND Billund.",baseCity:"Billund, Denmark",points:[
     {time:"08:30",name:"På landet",lat:55.7970,lng:8.9320,type:"hotel",info:"Partenza verso Billund."},
     {time:"09:30",name:"LEGOLAND Billund Resort",lat:55.7351,lng:9.1268,type:"prenotazione",info:"Giornata completa al parco; verificare orario definitivo 2026.",fee:"paid"},
-    {time:"12:30",name:"LEGOLAND · Burger Kitchen / Family Buffet",lat:55.7351,lng:9.1268,type:"ristorante",info:"Opzioni indicate nella guida v36: Burger Kitchen per pasto rapido; Family Buffet per pasto completo. Verificare apertura nell’app LEGOLAND."},
+    {time:"12:30",name:"LEGOLAND · Burger Kitchen / Family Buffet",lat:55.7351,lng:9.1268,type:"ristorante",info:"Opzioni indicate nella guida: Burger Kitchen per pasto rapido; Family Buffet per pasto completo. Verificare apertura nell’app LEGOLAND."},
     {time:"18:30",name:"På landet",lat:55.7970,lng:8.9320,type:"hotel",info:"Rientro e seconda notte."}],activities:["Mattina - trasferimento Grindsted → Billund.","Giornata completa a LEGOLAND.","Pasti: Burger Kitchen per soluzione rapida oppure Family Buffet; portare acqua/snack acquistati il 22. Verificare aperture nell’app LEGOLAND.","Rientro a På landet in serata."]},
   {day:"Giorno 3",date:"24/10/2026",title:"Billund → Copenaghen · centro e Tivoli",description:"Spesa per pranzo al sacco, trasferimento via Storebælt; hotel e parcheggio, Rådhuspladsen, Strøget, Rundetårn e Tivoli. Ingressi Tivoli già acquistati (senza attrazioni).",baseCity:"Copenhagen, Denmark",points:[
     {time:"08:45",name:"Supermercati Grindsted · spesa picnic",lat:55.757,lng:8.93,type:"ristorante",info:"Prima della partenza, scegliere uno tra REMA 1000 (Vestre Boulevard 5), Lidl, Netto e Kvickly a Grindsted. Possibile fare la spesa venerdì 23. Conservare al fresco gli alimenti deperibili.",fee:"optional"},
@@ -281,7 +287,7 @@ async function findServices(kind){
     count++;
   });
 
-  // For supermarkets, always add the places explicitly selected in guide v36.
+  // For supermarkets, always add the places explicitly selected in guide.
   // This avoids losing Grindsted stores simply because they are outside the live search radius around Billund.
   if(kind==="supermarket" && curatedSupermarkets[di]){
     curatedSupermarkets[di].forEach(s=>{
