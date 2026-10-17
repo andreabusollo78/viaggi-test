@@ -19,7 +19,7 @@
 .activities{padding:13px 14px;margin-top:12px}.activities h2{font-size:17px;margin:0 0 8px}.activities ul{padding-left:19px;margin:0}.activities li{margin:7px 0;line-height:1.35;font-size:14px}
 #burger{display:none;position:fixed;left:10px;top:9px;z-index:1200;width:42px;height:42px;border:0;border-radius:11px;background:#fff;color:#111827;font-size:24px;box-shadow:0 3px 14px #0004}body.day #burger{display:block}
 #menu{display:none;position:fixed;left:10px;top:58px;z-index:1200;width:245px;background:#111827;border-radius:13px;padding:8px;box-shadow:0 8px 25px #0006}#menu.open{display:block}
-#menu button{display:block;width:100%;border:1px solid #fff;background:#243047;color:#fff;text-align:left;padding:11px;border-radius:8px;margin:4px 0;font-weight:700;cursor:pointer}#menu button.active{background:#fff;color:#243047}#serviceStatus,#positionStatus{font-size:12px;color:#cbd5e1;padding:7px 8px 4px;line-height:1.45}
+#menu button{display:block;width:100%;border:1px solid #fff;background:#243047;color:#fff;text-align:left;padding:11px;border-radius:8px;margin:4px 0;font-weight:700;cursor:pointer}#menu button.active{background:#fff;color:#243047}#serviceStatus,#positionStatus{font-size:12px;color:#cbd5e1;padding:7px 8px 4px;line-height:1.45}#serviceLegend{display:flex;flex-wrap:wrap;gap:6px;padding:5px 8px}#serviceLegend .legend-tag{font-size:12px;color:#fff;display:inline-flex;align-items:center;gap:6px;border:1px solid #62748e;border-radius:7px;padding:5px 7px}#serviceLegend .legend-dot{width:13px;height:13px;display:inline-block;border:2px solid white;border-radius:50%;flex-shrink:0}
 .leaflet-control-attribution{font-size:9px}@media(min-width:800px){#map{height:48vh}}
 
 /* v27 compact layout */
@@ -45,7 +45,7 @@ body.section-view #strumenti .utility-list a span{color:#174e9c!important}
 body.section-view #strumenti .utility-list{background:#fff!important}
 </style></head><body>
 <button id="burger" aria-label="Menu servizi">☰</button>
-<div id="menu"><button data-kind="fuel">⛽ Distributori</button><button data-kind="atm">🏧 ATM</button><button data-kind="restaurant">🍽️ Ristoranti</button><button data-kind="supermarket">🛒 Supermercati</button><button data-kind="parking">🅿️ Parcheggi</button><div id="serviceStatus" role="status" aria-live="polite">La ricerca usa il centro della mappa. La posizione reale viene indicata se autorizzata.</div><div id="positionStatus">📍 Posizione reale: in attesa della prima ricerca.</div></div>
+<div id="menu"><button data-kind="fuel">⛽ Distributori</button><button data-kind="atm">🏧 ATM</button><button data-kind="restaurant">🍽️ Ristoranti</button><button data-kind="supermarket">🛒 Supermercati</button><button data-kind="parking">🅿️ Parcheggi</button><div id="serviceStatus" role="status" aria-live="polite">La ricerca usa il centro della mappa. La posizione reale viene indicata se autorizzata.</div><div id="positionStatus">📍 Posizione reale: in attesa della prima ricerca.</div><div id="serviceLegend" aria-label="Legenda colori dei filtri attivi"></div></div>
 <main class="home"><div class="home-head"><div class="eyebrow">🇩🇰 22–26 OTTOBRE 2026 · 6 VIAGGIATORI</div><h1>Il nostro viaggio</h1><p class="sub">Billund & Copenaghen <span class="version">· v40 TEST</span></p></div>
 <div id="todayCard" class="today-card"><div class="eyebrow" id="todayLabel">IL PROGRAMMA</div><strong id="todayTitle">Scegli una giornata</strong><p id="todayDescription">Cinque giorni tra LEGO, Copenaghen e Tivoli.</p><a id="todayLink" href="#giornate">Apri il programma →</a></div>
 <a class="section-return" href="index.html">← Torna alla Home</a><div class="quickgrid"><a href="?view=giornate" class="quick"><span>📅</span><b>Itinerario</b><small>Le 5 giornate</small></a><a href="navigazione.html" class="quick"><span>📍</span><b>Navigazione</b><small>Luoghi e servizi</small></a><a href="approfondimento.html" class="quick"><span>📝</span><b>Approfondimento</b><small>Storie e curiosità</small></a><a href="guida.html" class="quick"><span>📖</span><b>Guida completa</b><small>Dettagli e PDF</small></a><a href="?view=strumenti" class="quick"><span>🧰</span><b>Strumenti e servizi</b><small>Link utili</small></a><a href="?view=mappa-generale" class="quick"><span>🗺️</span><b>Mappa generale</b><small>Billund e Copenaghen</small></a></div>
@@ -245,6 +245,19 @@ function markRealPosition(){
     {enableHighAccuracy:true,timeout:10000,maximumAge:0}
   );
 }
+const serviceColors={fuel:"#e11d48",atm:"#a855f7",restaurant:"#f97316",supermarket:"#16a34a",parking:"#2563eb"};
+const serviceNames={fuel:"⛽ Distributori",atm:"🏧 ATM",restaurant:"🍽️ Ristoranti",supermarket:"🛒 Supermercati",parking:"🅿️ Parcheggi"};
+function updateServiceLegend(){
+  const legend=$("#serviceLegend");
+  if(!legend)return;
+  legend.replaceChildren();
+  for(const kind of ["fuel","atm","restaurant","supermarket","parking"]){
+    if(!activeServices.has(kind))continue;
+    const tag=document.createElement("span");tag.className="legend-tag";
+    const dot=document.createElement("span");dot.className="legend-dot";dot.style.backgroundColor=serviceColors[kind];
+    tag.append(dot,document.createTextNode(serviceNames[kind]));legend.appendChild(tag);
+  }
+}
 const pendingServices=new Set();
 async function findServices(kind){
   if(!map||pendingServices.has(kind))return;
@@ -253,6 +266,7 @@ async function findServices(kind){
   if(activeServices.has(kind)){
     if(serviceLayers[kind]){map.removeLayer(serviceLayers[kind]);delete serviceLayers[kind]}
     activeServices.delete(kind);
+    updateServiceLegend();
     btn?.classList.remove("active");
     $("#serviceStatus").textContent="Ricerca completata · "+labels[kind]+" disattivati. "+
       (activeServices.size?"Altri filtri attivi: "+[...activeServices].map(k=>labels[k]).join(", "):"Nessun filtro attivo.");
@@ -284,8 +298,8 @@ async function findServices(kind){
     const layer=L.layerGroup().addTo(map);
     serviceLayers[kind]=layer;
     activeServices.add(kind);
+    updateServiceLegend();
     btn?.classList.add("active");
-    const styles={fuel:"#e11d48",atm:"#7c3aed",restaurant:"#ea580c",supermarket:"#16a34a",parking:"#2563eb"};
     const known=new Set();
     let count=0;
     function addPlace(lat,lng,name,detail,curated=false){
@@ -294,7 +308,7 @@ async function findServices(kind){
       if(known.has(key))return;
       known.add(key);
       const nav="https://www.google.com/maps/dir/?api=1&destination="+lat+","+lng;
-      const marker=L.circleMarker([lat,lng],{radius:curated?10:8,weight:2,color:"#fff",fillColor:styles[kind],fillOpacity:.95}).addTo(layer);
+      const marker=L.circleMarker([lat,lng],{radius:curated?10:8,weight:2,color:"#fff",fillColor:serviceColors[kind],fillOpacity:.95}).addTo(layer);
       // Escape untrusted OSM labels before inserting into HTML popups.
       const safe=x=>String(x||"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
       marker.bindPopup("<b>"+safe(name)+"</b><br>"+safe(detail)+"<br><a href=\""+nav+"\" target=\"_blank\" rel=\"noopener\">Naviga</a>");
