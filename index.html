@@ -45,7 +45,7 @@ body.section-view #strumenti .utility-list a span{color:#174e9c!important}
 body.section-view #strumenti .utility-list{background:#fff!important}
 </style></head><body>
 <button id="burger" aria-label="Menu servizi">☰</button>
-<div id="menu"><button data-kind="fuel">⛽ Distributori</button><button data-kind="atm">🏧 ATM</button><button data-kind="restaurant">🍽️ Ristoranti</button><button data-kind="supermarket">🛒 Supermercati</button><button data-kind="parking">🅿️ Parcheggi</button><div id="serviceStatus" role="status" aria-live="polite">La ricerca usa il centro della mappa. La posizione reale viene indicata se autorizzata.</div><div id="positionStatus">📍 Posizione reale: in attesa della prima ricerca.</div><div id="serviceLegend" aria-label="Legenda colori dei filtri attivi"></div></div>
+<div id="menu"><button data-kind="fuel">⛽ Distributori</button><button data-kind="atm">🏧 ATM</button><button data-kind="restaurant">🍽️ Ristoranti</button><button data-kind="supermarket">🛒 Supermercati</button><button data-kind="parking">🅿️ Parcheggi</button><div id="serviceStatus" role="status" aria-live="polite">La ricerca usa il centro della mappa. La posizione reale viene indicata se autorizzata.</div><div id="positionStatus">📍 Posizione reale: in attesa della prima ricerca.</div><div id="serviceLegend" aria-label="Legenda colori dei filtri attivi"></div><div id="serviceFallback" style="padding:5px 8px"></div></div>
 <main class="home"><div class="home-head"><div class="eyebrow">🇩🇰 22–26 OTTOBRE 2026 · 6 VIAGGIATORI</div><h1>Il nostro viaggio</h1><p class="sub">Billund & Copenaghen <span class="version">· v40 TEST</span></p></div>
 <div id="todayCard" class="today-card"><div class="eyebrow" id="todayLabel">IL PROGRAMMA</div><strong id="todayTitle">Scegli una giornata</strong><p id="todayDescription">Cinque giorni tra LEGO, Copenaghen e Tivoli.</p><a id="todayLink" href="#giornate">Apri il programma →</a></div>
 <a class="section-return" href="index.html">← Torna alla Home</a><div class="quickgrid"><a href="?view=giornate" class="quick"><span>📅</span><b>Itinerario</b><small>Le 5 giornate</small></a><a href="navigazione.html" class="quick"><span>📍</span><b>Navigazione</b><small>Luoghi e servizi</small></a><a href="approfondimento.html" class="quick"><span>📝</span><b>Approfondimento</b><small>Storie e curiosità</small></a><a href="guida.html" class="quick"><span>📖</span><b>Guida completa</b><small>Dettagli e PDF</small></a><a href="?view=strumenti" class="quick"><span>🧰</span><b>Strumenti e servizi</b><small>Link utili</small></a><a href="?view=mappa-generale" class="quick"><span>🗺️</span><b>Mappa generale</b><small>Billund e Copenaghen</small></a></div>
@@ -263,30 +263,37 @@ const serviceCache=new Map();
 const overpassEndpoints=[
   "https://overpass.kumi.systems/api/interpreter",
   "https://overpass-api.de/api/interpreter",
-  "https://overpass.nchc.org.tw/api/interpreter"
+  "https://overpass.nchc.org.tw/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter"
 ];
 const overpassCooldown=new Map();
-function setServiceMessage(kind,message){
-  // A completion message is category-specific, even when multiple filters are active.
-  $("#serviceStatus").textContent=message;
+function setServiceMessage(kind,message){$("#serviceStatus").textContent=message}
+function showSearchFallback(kind,c){
+  const el=$("#serviceFallback");if(!el)return;
+  el.replaceChildren();
+  const names={fuel:"gas station",atm:"ATM",restaurant:"restaurants",supermarket:"supermarket",parking:"parking"};
+  const a=document.createElement("a");
+  a.href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(names[kind]+" near "+c.lat.toFixed(5)+","+c.lng.toFixed(5));
+  a.target="_blank";a.rel="noopener";
+  a.textContent="🔎 Cerca "+labels[kind]+" su Google Maps ↗";
+  a.style.cssText="display:block;background:#fff;color:#174e9c;padding:12px;border-radius:9px;text-decoration:none;font-weight:750";
+  el.appendChild(a);
 }
 async function fetchOverpass(query){
   let lastError=null;
   for(const endpoint of overpassEndpoints){
     if((overpassCooldown.get(endpoint)||0)>Date.now())continue;
     const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),10500);
+    const timer=setTimeout(()=>controller.abort(),7000);
     try{
-      const body=new URLSearchParams({data:query});
-      const r=await fetch(endpoint,{method:"POST",body,signal:controller.signal,headers:{"Accept":"application/json"}});
+      // GET avoids the cross-origin POST preflight rejected by some public mirrors.
+      const r=await fetch(endpoint+"?data="+encodeURIComponent(query),{signal:controller.signal,headers:{"Accept":"application/json"}});
       if(!r.ok)throw new Error("HTTP "+r.status);
       const data=await r.json();
       if(!Array.isArray(data.elements))throw new Error("Risposta non valida");
       return data.elements;
-    }catch(e){
-      lastError=e;
-      overpassCooldown.set(endpoint,Date.now()+30000);
-    }finally{clearTimeout(timer)}
+    }catch(e){lastError=e;overpassCooldown.set(endpoint,Date.now()+20000)}
+    finally{clearTimeout(timer)}
   }
   throw lastError||new Error("Nessun server disponibile");
 }
@@ -306,10 +313,11 @@ async function findServices(kind){
   setServiceMessage(kind,"Ricerca in corso · "+labels[kind]+"…");
   markRealPosition();
   const c=map.getCenter();
+  showSearchFallback(kind,c);
   const radius=kind==="fuel"?12000:5000;
   const cacheKey=kind+":"+c.lat.toFixed(3)+":"+c.lng.toFixed(3);
   const cached=serviceCache.get(cacheKey);
-  const query="[out:json][timeout:15];"+tags[kind]+"(around:"+radius+","+c.lat+","+c.lng+");out center 40;";
+  const query="[out:json][timeout:12];"+tags[kind]+"(around:"+radius+","+c.lat+","+c.lng+");out center 40;";
   let elements=null,fromCache=false,error=null;
   try{
     if(cached&&Date.now()-cached.time<5*60*1000){
@@ -323,7 +331,7 @@ async function findServices(kind){
     // Curated stores remain available on day 1 when external providers are down.
     const curated=kind==="supermarket"?(curatedSupermarkets[di]||[]).filter(shop=>map.distance(c,[shop.lat,shop.lng])<=radius):[];
     if(!elements&&!curated.length){
-      setServiceMessage(kind,"Ricerca "+labels[kind]+" non completata · I server cartografici non rispondono. Gli altri filtri restano attivi; riprova fra poco.");
+      setServiceMessage(kind,"Ricerca "+labels[kind]+" non completata · Server cartografici non disponibili. Usa il pulsante Google Maps qui sotto oppure riprova.");
       return;
     }
     const layer=L.layerGroup().addTo(map);
@@ -352,7 +360,7 @@ async function findServices(kind){
     const suffix=error?" · Solo punti verificati della guida; server esterni non disponibili.":fromCache?" · Dati recenti in cache.":"";
     setServiceMessage(kind,(error?"Ricerca parziale":"Ricerca completata")+" · "+labels[kind]+": "+count+" risultati entro "+radius/1000+" km dal centro della mappa."+suffix+(count===0?" Sposta la mappa e riprova.":""));
   }catch(e){
-    setServiceMessage(kind,"Ricerca "+labels[kind]+" non completata · Errore imprevisto. Riprova.");
+    setServiceMessage(kind,"Ricerca "+labels[kind]+" non completata · Usa il collegamento Google Maps qui sotto.");
   }finally{
     pendingServices.delete(kind);
     btn?.classList.remove("searching");
