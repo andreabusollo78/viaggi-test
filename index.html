@@ -259,74 +259,100 @@ function updateServiceLegend(){
   }
 }
 const pendingServices=new Set();
+const serviceCache=new Map();
+const overpassEndpoints=[
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.nchc.org.tw/api/interpreter"
+];
+const overpassCooldown=new Map();
+function setServiceMessage(kind,message){
+  // A completion message is category-specific, even when multiple filters are active.
+  $("#serviceStatus").textContent=message;
+}
+async function fetchOverpass(query){
+  let lastError=null;
+  for(const endpoint of overpassEndpoints){
+    if((overpassCooldown.get(endpoint)||0)>Date.now())continue;
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),10500);
+    try{
+      const body=new URLSearchParams({data:query});
+      const r=await fetch(endpoint,{method:"POST",body,signal:controller.signal,headers:{"Accept":"application/json"}});
+      if(!r.ok)throw new Error("HTTP "+r.status);
+      const data=await r.json();
+      if(!Array.isArray(data.elements))throw new Error("Risposta non valida");
+      return data.elements;
+    }catch(e){
+      lastError=e;
+      overpassCooldown.set(endpoint,Date.now()+30000);
+    }finally{clearTimeout(timer)}
+  }
+  throw lastError||new Error("Nessun server disponibile");
+}
 async function findServices(kind){
   if(!map||pendingServices.has(kind))return;
-  const btn=document.querySelector(`#menu button[data-kind="${kind}"]`);
-  // Il secondo tocco disattiva soltanto la categoria scelta.
+  const btn=document.querySelector('#menu button[data-kind="'+kind+'"]');
   if(activeServices.has(kind)){
     if(serviceLayers[kind]){map.removeLayer(serviceLayers[kind]);delete serviceLayers[kind]}
     activeServices.delete(kind);
-    updateServiceLegend();
     btn?.classList.remove("active");
-    $("#serviceStatus").textContent="Ricerca completata · "+labels[kind]+" disattivati. "+
-      (activeServices.size?"Altri filtri attivi: "+[...activeServices].map(k=>labels[k]).join(", "):"Nessun filtro attivo.");
+    updateServiceLegend();
+    setServiceMessage(kind,"Ricerca completata · "+labels[kind]+" disattivati.");
     return;
   }
   pendingServices.add(kind);
   btn?.classList.add("searching");
-  $("#serviceStatus").textContent="Ricerca in corso: "+labels[kind].toLowerCase()+"…";
+  setServiceMessage(kind,"Ricerca in corso · "+labels[kind]+"…");
   markRealPosition();
   const c=map.getCenter();
   const radius=kind==="fuel"?12000:5000;
-  const query=`[out:json][timeout:20];${tags[kind]}(around:${radius},${c.lat},${c.lng});out center 40;`;
-  const endpoints=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"];
-  let data=null;
+  const cacheKey=kind+":"+c.lat.toFixed(3)+":"+c.lng.toFixed(3);
+  const cached=serviceCache.get(cacheKey);
+  const query="[out:json][timeout:15];"+tags[kind]+"(around:"+radius+","+c.lat+","+c.lng+");out center 40;";
+  let elements=null,fromCache=false,error=null;
   try{
-    for(const ep of endpoints){
+    if(cached&&Date.now()-cached.time<5*60*1000){
+      elements=cached.elements;fromCache=true;
+    }else{
       try{
-        const r=await fetch(ep+"?data="+encodeURIComponent(query),{method:"GET",headers:{"Accept":"application/json"}});
-        if(!r.ok)throw Error("HTTP "+r.status);
-        const candidate=await r.json();
-        if(!Array.isArray(candidate.elements))throw Error("Risposta non valida");
-        data=candidate;break;
-      }catch(e){}
+        elements=await fetchOverpass(query);
+        serviceCache.set(cacheKey,{time:Date.now(),elements});
+      }catch(e){error=e}
     }
-    if(!data){
-      $("#serviceStatus").textContent="Ricerca non completata · Servizio temporaneamente non disponibile. Riprova.";
+    // Curated stores remain available on day 1 when external providers are down.
+    const curated=kind==="supermarket"?(curatedSupermarkets[di]||[]).filter(shop=>map.distance(c,[shop.lat,shop.lng])<=radius):[];
+    if(!elements&&!curated.length){
+      setServiceMessage(kind,"Ricerca "+labels[kind]+" non completata · I server cartografici non rispondono. Gli altri filtri restano attivi; riprova fra poco.");
       return;
     }
     const layer=L.layerGroup().addTo(map);
     serviceLayers[kind]=layer;
     activeServices.add(kind);
-    updateServiceLegend();
     btn?.classList.add("active");
+    updateServiceLegend();
     const known=new Set();
     let count=0;
-    function addPlace(lat,lng,name,detail,curated=false){
+    function addPlace(lat,lng,name,detail,curatedPlace=false){
       if(!Number.isFinite(lat)||!Number.isFinite(lng))return;
-      const key=lat.toFixed(3)+","+lng.toFixed(3);
+      const key=lat.toFixed(4)+","+lng.toFixed(4);
       if(known.has(key))return;
       known.add(key);
       const nav="https://www.google.com/maps/dir/?api=1&destination="+lat+","+lng;
-      const marker=L.circleMarker([lat,lng],{radius:curated?10:8,weight:2,color:"#fff",fillColor:serviceColors[kind],fillOpacity:.95}).addTo(layer);
-      // Escape untrusted OSM labels before inserting into HTML popups.
+      const marker=L.circleMarker([lat,lng],{radius:curatedPlace?10:8,weight:2,color:"#fff",fillColor:serviceColors[kind],fillOpacity:.95}).addTo(layer);
       const safe=x=>String(x||"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
       marker.bindPopup("<b>"+safe(name)+"</b><br>"+safe(detail)+"<br><a href=\""+nav+"\" target=\"_blank\" rel=\"noopener\">Naviga</a>");
       count++;
     }
-    for(const x of data.elements){
+    for(const x of elements||[]){
       const lat=Number(x.lat??x.center?.lat),lng=Number(x.lon??x.center?.lon);
       addPlace(lat,lng,x.tags?.name||labels[kind],labels[kind]);
     }
-    // I negozi della guida si aggiungono solo se sono entro il raggio dal centro mappa.
-    if(kind==="supermarket"&&curatedSupermarkets[di]){
-      for(const shop of curatedSupermarkets[di]){
-        if(map.distance(c,[shop.lat,shop.lng])<=radius)
-          addPlace(shop.lat,shop.lng,shop.name,shop.address+" · "+shop.note,true);
-      }
-    }
-    $("#serviceStatus").textContent="Ricerca completata · "+count+" risultati per "+labels[kind].toLowerCase()+
-      " entro "+(radius/1000)+" km dal centro della mappa."+(count===0?" Sposta la mappa e riprova.":"");
+    for(const shop of curated)addPlace(shop.lat,shop.lng,shop.name,shop.address+" · "+shop.note,true);
+    const suffix=error?" · Solo punti verificati della guida; server esterni non disponibili.":fromCache?" · Dati recenti in cache.":"";
+    setServiceMessage(kind,(error?"Ricerca parziale":"Ricerca completata")+" · "+labels[kind]+": "+count+" risultati entro "+radius/1000+" km dal centro della mappa."+suffix+(count===0?" Sposta la mappa e riprova.":""));
+  }catch(e){
+    setServiceMessage(kind,"Ricerca "+labels[kind]+" non completata · Errore imprevisto. Riprova.");
   }finally{
     pendingServices.delete(kind);
     btn?.classList.remove("searching");
