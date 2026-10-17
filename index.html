@@ -19,7 +19,7 @@
 .activities{padding:13px 14px;margin-top:12px}.activities h2{font-size:17px;margin:0 0 8px}.activities ul{padding-left:19px;margin:0}.activities li{margin:7px 0;line-height:1.35;font-size:14px}
 #burger{display:none;position:fixed;left:10px;top:9px;z-index:1200;width:42px;height:42px;border:0;border-radius:11px;background:#fff;color:#111827;font-size:24px;box-shadow:0 3px 14px #0004}body.day #burger{display:block}
 #menu{display:none;position:fixed;left:10px;top:58px;z-index:1200;width:245px;background:#111827;border-radius:13px;padding:8px;box-shadow:0 8px 25px #0006}#menu.open{display:block}
-#menu button{display:block;width:100%;border:1px solid #fff;background:#243047;color:#fff;text-align:left;padding:11px;border-radius:8px;margin:4px 0;font-weight:700;cursor:pointer}#menu button.active{background:#fff;color:#243047}#serviceStatus{font-size:12px;color:#cbd5e1;padding:7px 8px 4px}
+#menu button{display:block;width:100%;border:1px solid #fff;background:#243047;color:#fff;text-align:left;padding:11px;border-radius:8px;margin:4px 0;font-weight:700;cursor:pointer}#menu button.active{background:#fff;color:#243047}#serviceStatus,#positionStatus{font-size:12px;color:#cbd5e1;padding:7px 8px 4px;line-height:1.45}
 .leaflet-control-attribution{font-size:9px}@media(min-width:800px){#map{height:48vh}}
 
 /* v27 compact layout */
@@ -45,7 +45,7 @@ body.section-view #strumenti .utility-list a span{color:#174e9c!important}
 body.section-view #strumenti .utility-list{background:#fff!important}
 </style></head><body>
 <button id="burger" aria-label="Menu servizi">☰</button>
-<div id="menu"><button data-kind="fuel">⛽ Distributori</button><button data-kind="atm">🏧 ATM</button><button data-kind="restaurant">🍽️ Ristoranti</button><button data-kind="supermarket">🛒 Supermercati</button><button data-kind="parking">🅿️ Parcheggi</button><div id="serviceStatus">I risultati vengono mostrati sulla mappa.</div></div>
+<div id="menu"><button data-kind="fuel">⛽ Distributori</button><button data-kind="atm">🏧 ATM</button><button data-kind="restaurant">🍽️ Ristoranti</button><button data-kind="supermarket">🛒 Supermercati</button><button data-kind="parking">🅿️ Parcheggi</button><div id="serviceStatus" role="status" aria-live="polite">La ricerca usa il centro della mappa. La posizione reale viene indicata se autorizzata.</div><div id="positionStatus">📍 Posizione reale: in attesa della prima ricerca.</div></div>
 <main class="home"><div class="home-head"><div class="eyebrow">🇩🇰 22–26 OTTOBRE 2026 · 6 VIAGGIATORI</div><h1>Il nostro viaggio</h1><p class="sub">Billund & Copenaghen <span class="version">· v40 TEST</span></p></div>
 <div id="todayCard" class="today-card"><div class="eyebrow" id="todayLabel">IL PROGRAMMA</div><strong id="todayTitle">Scegli una giornata</strong><p id="todayDescription">Cinque giorni tra LEGO, Copenaghen e Tivoli.</p><a id="todayLink" href="#giornate">Apri il programma →</a></div>
 <a class="section-return" href="index.html">← Torna alla Home</a><div class="quickgrid"><a href="?view=giornate" class="quick"><span>📅</span><b>Itinerario</b><small>Le 5 giornate</small></a><a href="navigazione.html" class="quick"><span>📍</span><b>Navigazione</b><small>Luoghi e servizi</small></a><a href="approfondimento.html" class="quick"><span>📝</span><b>Approfondimento</b><small>Storie e curiosità</small></a><a href="guida.html" class="quick"><span>📖</span><b>Guida completa</b><small>Dettagli e PDF</small></a><a href="?view=strumenti" class="quick"><span>🧰</span><b>Strumenti e servizi</b><small>Link utili</small></a><a href="?view=mappa-generale" class="quick"><span>🗺️</span><b>Mappa generale</b><small>Billund e Copenaghen</small></a></div>
@@ -215,94 +215,108 @@ const tags={
 const labels={fuel:"Distributore",atm:"ATM",restaurant:"Ristorante / bar",supermarket:"Supermercato",parking:"Parcheggio"};
 
 
-async function findServices(kind){
-  if(!map) return;
-  const btn=document.querySelector(`#menu button[data-kind="${kind}"]`);
-
-  // Each category is independent: second click removes only that category.
-  if(activeServices.has(kind)){
-    if(serviceLayers[kind]){
-      map.removeLayer(serviceLayers[kind]);
-      delete serviceLayers[kind];
-    }
-    activeServices.delete(kind);
-    btn?.classList.remove("active");
-    $("#serviceStatus").textContent=activeServices.size
-      ? "Attivi: "+[...activeServices].map(k=>labels[k]).join(", ")
-      : "Nessun servizio attivo.";
+// Tutte le giornate: la ricerca usa sempre il centro della mappa, mai la geolocalizzazione.
+let realPositionMarker=null;
+let positionRequestPending=false;
+function markRealPosition(){
+  if(!map||positionRequestPending)return;
+  if(!navigator.geolocation){
+    $("#positionStatus").textContent="📍 Posizione reale non disponibile su questo dispositivo.";
     return;
   }
-
-  btn?.classList.add("active");
-  $("#serviceStatus").textContent="Ricerca "+labels[kind].toLowerCase()+"…";
-
+  positionRequestPending=true;
+  $("#positionStatus").textContent="📍 Rilevamento della posizione reale (se autorizzato)…";
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      positionRequestPending=false;
+      if(!map)return;
+      const ll=[pos.coords.latitude,pos.coords.longitude];
+      if(realPositionMarker)map.removeLayer(realPositionMarker);
+      realPositionMarker=L.circleMarker(ll,{radius:9,color:"#fff",weight:3,fillColor:"#2563eb",fillOpacity:1})
+        .addTo(map).bindPopup("📍 La tua posizione reale al momento della ricerca (precisione indicativa: "+Math.round(pos.coords.accuracy)+" m).");
+      $("#positionStatus").textContent="📍 Posizione reale segnata in blu (precisione circa "+Math.round(pos.coords.accuracy)+" m). Ricerca centrata sulla mappa.";
+    },
+    err=>{
+      positionRequestPending=false;
+      $("#positionStatus").textContent=err.code===1
+        ?"📍 Posizione non autorizzata: ricerca comunque centrata sulla mappa."
+        :"📍 Posizione reale non rilevabile: ricerca comunque centrata sulla mappa.";
+    },
+    {enableHighAccuracy:true,timeout:10000,maximumAge:0}
+  );
+}
+const pendingServices=new Set();
+async function findServices(kind){
+  if(!map||pendingServices.has(kind))return;
+  const btn=document.querySelector(`#menu button[data-kind="${kind}"]`);
+  // Il secondo tocco disattiva soltanto la categoria scelta.
+  if(activeServices.has(kind)){
+    if(serviceLayers[kind]){map.removeLayer(serviceLayers[kind]);delete serviceLayers[kind]}
+    activeServices.delete(kind);
+    btn?.classList.remove("active");
+    $("#serviceStatus").textContent="Ricerca completata · "+labels[kind]+" disattivati. "+
+      (activeServices.size?"Altri filtri attivi: "+[...activeServices].map(k=>labels[k]).join(", "):"Nessun filtro attivo.");
+    return;
+  }
+  pendingServices.add(kind);
+  btn?.classList.add("searching");
+  $("#serviceStatus").textContent="Ricerca in corso: "+labels[kind].toLowerCase()+"…";
+  markRealPosition();
   const c=map.getCenter();
   const radius=kind==="fuel"?12000:5000;
   const query=`[out:json][timeout:20];${tags[kind]}(around:${radius},${c.lat},${c.lng});out center 40;`;
-  const endpoints=[
-    "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter"
-  ];
-
+  const endpoints=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"];
   let data=null;
-  for(const ep of endpoints){
-    try{
-      const url=ep+"?data="+encodeURIComponent(query);
-      const r=await fetch(url,{method:"GET",headers:{"Accept":"application/json"}});
-      if(!r.ok) throw new Error("HTTP "+r.status);
-      data=await r.json();
-      break;
-    }catch(e){}
+  try{
+    for(const ep of endpoints){
+      try{
+        const r=await fetch(ep+"?data="+encodeURIComponent(query),{method:"GET",headers:{"Accept":"application/json"}});
+        if(!r.ok)throw Error("HTTP "+r.status);
+        const candidate=await r.json();
+        if(!Array.isArray(candidate.elements))throw Error("Risposta non valida");
+        data=candidate;break;
+      }catch(e){}
+    }
+    if(!data){
+      $("#serviceStatus").textContent="Ricerca non completata · Servizio temporaneamente non disponibile. Riprova.";
+      return;
+    }
+    const layer=L.layerGroup().addTo(map);
+    serviceLayers[kind]=layer;
+    activeServices.add(kind);
+    btn?.classList.add("active");
+    const styles={fuel:"#e11d48",atm:"#7c3aed",restaurant:"#ea580c",supermarket:"#16a34a",parking:"#2563eb"};
+    const known=new Set();
+    let count=0;
+    function addPlace(lat,lng,name,detail,curated=false){
+      if(!Number.isFinite(lat)||!Number.isFinite(lng))return;
+      const key=lat.toFixed(3)+","+lng.toFixed(3);
+      if(known.has(key))return;
+      known.add(key);
+      const nav="https://www.google.com/maps/dir/?api=1&destination="+lat+","+lng;
+      const marker=L.circleMarker([lat,lng],{radius:curated?10:8,weight:2,color:"#fff",fillColor:styles[kind],fillOpacity:.95}).addTo(layer);
+      // Escape untrusted OSM labels before inserting into HTML popups.
+      const safe=x=>String(x||"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+      marker.bindPopup("<b>"+safe(name)+"</b><br>"+safe(detail)+"<br><a href=\""+nav+"\" target=\"_blank\" rel=\"noopener\">Naviga</a>");
+      count++;
+    }
+    for(const x of data.elements){
+      const lat=Number(x.lat??x.center?.lat),lng=Number(x.lon??x.center?.lon);
+      addPlace(lat,lng,x.tags?.name||labels[kind],labels[kind]);
+    }
+    // I negozi della guida si aggiungono solo se sono entro il raggio dal centro mappa.
+    if(kind==="supermarket"&&curatedSupermarkets[di]){
+      for(const shop of curatedSupermarkets[di]){
+        if(map.distance(c,[shop.lat,shop.lng])<=radius)
+          addPlace(shop.lat,shop.lng,shop.name,shop.address+" · "+shop.note,true);
+      }
+    }
+    $("#serviceStatus").textContent="Ricerca completata · "+count+" risultati per "+labels[kind].toLowerCase()+
+      " entro "+(radius/1000)+" km dal centro della mappa."+(count===0?" Sposta la mappa e riprova.":"");
+  }finally{
+    pendingServices.delete(kind);
+    btn?.classList.remove("searching");
   }
-
-  if(!data){
-    btn?.classList.remove("active");
-    $("#serviceStatus").textContent="Ricerca "+labels[kind].toLowerCase()+" temporaneamente non disponibile.";
-    return;
-  }
-
-  const layer=L.layerGroup().addTo(map);
-  serviceLayers[kind]=layer;
-  activeServices.add(kind);
-
-  const styles={
-    fuel:{color:"#fff",fillColor:"#e11d48"},
-    atm:{color:"#fff",fillColor:"#7c3aed"},
-    restaurant:{color:"#fff",fillColor:"#ea580c"},
-    supermarket:{color:"#fff",fillColor:"#16a34a"},
-    parking:{color:"#fff",fillColor:"#2563eb"}
-  };
-
-  let count=0;
-  data.elements.forEach(x=>{
-    const lat=x.lat??x.center?.lat, lng=x.lon??x.center?.lon;
-    if(lat==null||lng==null) return;
-    const name=x.tags?.name||labels[kind];
-    const nav=`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-    const st=styles[kind];
-    const m=L.circleMarker([lat,lng],{
-      radius:8,weight:2,color:st.color,fillColor:st.fillColor,fillOpacity:.95
-    }).addTo(layer);
-    m.bindPopup(`<b>${name}</b><br>${labels[kind]}<br><a href="${nav}" target="_blank" rel="noopener">Naviga</a>`);
-    count++;
-  });
-
-  // For supermarkets, always add the places explicitly selected in guide.
-  // This avoids losing Grindsted stores simply because they are outside the live search radius around Billund.
-  if(kind==="supermarket" && curatedSupermarkets[di]){
-    curatedSupermarkets[di].forEach(s=>{
-      const nav=`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
-      const m=L.circleMarker([s.lat,s.lng],{
-        radius:10,weight:3,color:"#ffffff",fillColor:"#16a34a",fillOpacity:1
-      }).addTo(layer);
-      m.bindPopup(`<b>${s.name}</b><br>${s.address}<br><b>${s.note}</b><br><a href="${nav}" target="_blank" rel="noopener">Naviga</a>`);
-    });
-    count += curatedSupermarkets[di].length;
-  }
-
-  $("#serviceStatus").textContent=count
-    ? "Attivi: "+[...activeServices].map(k=>labels[k]).join(", ")
-    : "Nessun risultato per "+labels[kind].toLowerCase()+".";
 }
 document.querySelectorAll("#menu button[data-kind]").forEach(b=>{
   b.addEventListener("click",ev=>{
