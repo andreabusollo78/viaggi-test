@@ -266,7 +266,6 @@ const overpassEndpoints=[
   "https://overpass.nchc.org.tw/api/interpreter",
   "https://overpass.private.coffee/api/interpreter"
 ];
-const overpassCooldown=new Map();
 function setServiceMessage(kind,message){$("#serviceStatus").textContent=message}
 function showSearchFallback(kind,c){
   const el=$("#serviceFallback");if(!el)return;
@@ -282,9 +281,8 @@ function showSearchFallback(kind,c){
 async function fetchOverpass(query){
   let lastError=null;
   for(const endpoint of overpassEndpoints){
-    if((overpassCooldown.get(endpoint)||0)>Date.now())continue;
     const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),7000);
+    const timer=setTimeout(()=>controller.abort(),12000);
     try{
       // GET avoids the cross-origin POST preflight rejected by some public mirrors.
       const r=await fetch(endpoint+"?data="+encodeURIComponent(query),{signal:controller.signal,headers:{"Accept":"application/json"}});
@@ -292,7 +290,7 @@ async function fetchOverpass(query){
       const data=await r.json();
       if(!Array.isArray(data.elements))throw new Error("Risposta non valida");
       return data.elements;
-    }catch(e){lastError=e;overpassCooldown.set(endpoint,Date.now()+20000)}
+    }catch(e){lastError=e}
     finally{clearTimeout(timer)}
   }
   throw lastError||new Error("Nessun server disponibile");
@@ -317,7 +315,7 @@ async function findServices(kind){
   const radius=kind==="fuel"?12000:5000;
   const cacheKey=kind+":"+c.lat.toFixed(3)+":"+c.lng.toFixed(3);
   const cached=serviceCache.get(cacheKey);
-  const query="[out:json][timeout:12];"+tags[kind]+"(around:"+radius+","+c.lat+","+c.lng+");out center 40;";
+  const query="[out:json][timeout:20];"+tags[kind]+"(around:"+radius+","+c.lat+","+c.lng+");out center 40;";
   let elements=null,fromCache=false,error=null;
   try{
     if(cached&&Date.now()-cached.time<5*60*1000){
